@@ -1,0 +1,13 @@
+create_table("pictures", func(t) {
+  t.Column("id", "uuid", {"primary": true})
+
+  t.Column("upvotes", "integer", {})
+  t.Column("downvotes", "integer", {})
+  t.Column("sorting", "float", {})
+  t.Column("confidence_level", "float", {})
+  t.Column("filename", "string", {"size": 100})
+  t.Column("hash", "string", {"size": 100})
+})
+
+add_index("pictures", "sorting", {})
+add_index("pictures", "confidence_level", {})
