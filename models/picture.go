@@ -18,6 +18,7 @@ type Picture struct {
 	ConfidenceLevel float32   `json:"confidenceLevel" db:"confidence_level"`
 	Filename        string    `json:"filename" db:"filename"`
 	Hash            string    `json:"hash" db:"hash"`
+	Import          Import    `json:"-" belongs_to:"import"`
 	CreatedAt       time.Time `json:"createdAt" db:"created_at"`
 	UpdatedAt       time.Time `json:"updatedAt" db:"updated_at"`
 }

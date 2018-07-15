@@ -1,0 +1,2 @@
+drop_foreign_key("pictures", "pictures_imports_id_fk", {"if_exists": true})
+drop_table("imports")

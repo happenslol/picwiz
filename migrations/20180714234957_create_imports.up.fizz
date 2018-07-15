@@ -1,0 +1,9 @@
+create_table("imports", func(t) {
+	t.Column("id", "uuid", {"primary": true})
+	t.Column("author", "string", {"size": 50})
+	t.Column("source", "string", {"size": 100})
+	t.Column("processed", "boolean", {})
+})
+
+add_column("pictures", "import_id", "uuid", {})
+add_foreign_key("pictures", "import_id", {"imports": ["id"]}, {})
