@@ -1,0 +1,6 @@
+create_table("votes") {
+	t.Column("id", "uuid", {"primary": true})
+    t.Column("picture_id", "uuid", {"null": true})
+
+    t.ForeignKey("picture_id", {"pictures": ["id"]}, {"on_delete": "SET NULL"})
+}

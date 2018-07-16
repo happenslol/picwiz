@@ -51,7 +51,7 @@ func ImportsCandidates(c buffalo.Context) error {
 }
 
 // ImportsCreateRequest ...
-type ImportsCreateRequest struct {
+type importsCreateRequest struct {
 	Author    string `json:"author"`
 	Location  string `json:"location"`
 	Directory string `json:"directory"`
@@ -60,7 +60,7 @@ type ImportsCreateRequest struct {
 // ImportsCreate creates a new import and imports all the files
 // from the given directory
 func ImportsCreate(c buffalo.Context) error {
-	var req ImportsCreateRequest
+	var req importsCreateRequest
 	if err := c.Bind(&req); err != nil {
 		return err
 	}
