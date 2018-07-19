@@ -42,7 +42,8 @@ func App() *buffalo.App {
 		app.GET("/admin", AdminIndex)
 		app.GET("/imports/candidates", ImportsCandidates)
 		app.POST("/imports", ImportsCreate)
-		app.POST("/votes", VotesCreate)
+		app.POST("/pictures/{pictureId}/votes", VotesCreate)
+		app.GET("/pictures/hot", PicturesHot)
 
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
 	}

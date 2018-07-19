@@ -3,10 +3,13 @@ package actions
 import (
 	"errors"
 	"fmt"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/pop"
+	"github.com/gobuffalo/uuid"
 	"github.com/happenslol/picwiz/models"
 	"github.com/spf13/afero"
 )
@@ -65,27 +68,73 @@ func ImportsCreate(c buffalo.Context) error {
 		return err
 	}
 
-	srcString := fmt.Sprintf(
+	srcStr := fmt.Sprintf(
 		"%s%s%s",
 		req.Location,
 		afero.FilePathSeparator,
 		req.Directory,
 	)
 
-	c.Logger().Infof("built src string %s", srcString)
+	c.Logger().Infof("built src string %s", srcStr)
 
-	exists, _ := afero.DirExists(fs, srcString)
+	exists, _ := afero.DirExists(fs, srcStr)
 	if !exists {
 		return c.Error(500, errors.New("target directory not found"))
 	}
 
-	c.Logger().Infof("importing all files from %s", srcString)
+	c.Logger().Infof("importing all files from %s", srcStr)
+	uuid, _ := uuid.NewV1()
 
 	toCreate := &models.Import{
+		ID:        uuid,
 		Author:    req.Author,
-		Source:    srcString,
+		Source:    srcStr,
 		Processed: false,
 	}
+
+	go func() {
+		fmt.Printf("storage path: %s\n", storagePath)
+		destStr := fmt.Sprintf(
+			"%s%simports%s%s",
+			storagePath,
+			afero.FilePathSeparator,
+			afero.FilePathSeparator,
+			toCreate.ID,
+		)
+		fmt.Printf("target path: %s\n", destStr)
+
+		if runtime.GOOS == "windows" {
+			xcopyCmd := fmt.Sprintf(
+				"xcopy \"%s\" \"%s\" /c /i /q /s /y",
+				srcStr,
+				destStr,
+			)
+
+			fmt.Printf("running xcopy with opts: %s\n", xcopyCmd)
+
+			cmd := exec.Command("powershell", xcopyCmd)
+
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("import error: %v\n", err)
+			} else {
+				fmt.Printf("import %s successful\n", toCreate.ID)
+			}
+		} else {
+			cpOpts := fmt.Sprintf(
+				"-rf '%s' '%s'",
+				srcStr,
+				destStr,
+			)
+
+			cmd := exec.Command("cp", cpOpts)
+
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("import error: %v\n", err)
+			} else {
+				fmt.Printf("import %s successful\n", toCreate.ID)
+			}
+		}
+	}()
 
 	tx, ok := c.Value("tx").(*pop.Connection)
 	if !ok {

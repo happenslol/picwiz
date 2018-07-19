@@ -11,7 +11,7 @@ import (
 type M map[string]interface{}
 
 var fs = afero.NewOsFs()
-var storagePath = envy.Get("STORAGE_PATH", "")
+var storagePath = envy.Get("STORAGE_LOCATION", "")
 var scanLocations = getScanLocations()
 
 func getScanLocations() []string {
