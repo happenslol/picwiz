@@ -15,8 +15,8 @@ type Import struct {
 	Author    string    `json:"author" db:"author"`
 	Source    string    `json:"source" db:"source"`
 	Processed bool      `json:"processed" db:"processed"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 // String ...

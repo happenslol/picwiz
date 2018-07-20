@@ -121,12 +121,14 @@ func ImportsCreate(c buffalo.Context) error {
 			}
 		} else {
 			cpOpts := fmt.Sprintf(
-				"-rf '%s' '%s'",
+				"cp -rf '%s' '%s'",
 				srcStr,
 				destStr,
 			)
 
-			cmd := exec.Command("cp", cpOpts)
+			fmt.Printf("running cp with opts %s\n", cpOpts)
+
+			cmd := exec.Command("bash", "-c", cpOpts)
 
 			if err := cmd.Run(); err != nil {
 				fmt.Printf("import error: %v\n", err)
