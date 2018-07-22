@@ -37,15 +37,14 @@ func VotesCreate(c buffalo.Context) error {
 		return c.Render(500, r.JSON(M{"error": err.Error()}))
 	}
 
-	// TODO: Update picture score here
-	// picture.ConfidenceLevel = ?
 	if req.IsUpvote {
 		picture.Upvotes = picture.Upvotes + 1
 	} else {
 		picture.Downvotes = picture.Downvotes + 1
 	}
 
-	picture.ConfidenceLevel = float32(confidenceLevel(picture.Upvotes, picture.Downvotes))
+	picture.Sorting = float32(confidenceLevel(picture.Upvotes, picture.Downvotes))
+	picture.ConfidenceLevel = float32(math.Abs(float64(0.5-picture.Sorting)) * float64(picture.Upvotes+picture.Downvotes) / 10.0)
 
 	if err := tx.Save(&picture); err != nil {
 		return c.Render(500, r.JSON(M{"error": err.Error()}))
