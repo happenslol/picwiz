@@ -8,14 +8,18 @@ import (
 )
 
 type votesCreateRequest struct {
-	PictureID uuid.UUID `json:"uuid"`
-	IsUpvote  bool      `json:"isUpvote"`
+	IsUpvote bool `json:"isUpvote"`
 }
 
 // VotesCreate creates a vote for a picture
 func VotesCreate(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
 	pictureID, _ := uuid.FromString(c.Param("pictureId"))
+
+	req := votesCreateRequest{}
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
 
 	picture := models.Picture{}
 	if err := tx.Find(&picture, pictureID); err != nil {
@@ -33,7 +37,7 @@ func VotesCreate(c buffalo.Context) error {
 
 	// TODO: Update picture score here
 	// picture.ConfidenceLevel = ?
-	if votesCreateRequest.IsUpvote {
+	if req.IsUpvote {
 		picture.Upvotes = picture.Upvotes + 1
 	} else {
 		picture.Downvotes = picture.Downvotes + 1
