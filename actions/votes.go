@@ -9,6 +9,7 @@ import (
 
 type votesCreateRequest struct {
 	PictureID uuid.UUID `json:"uuid"`
+	IsUpvote  bool      `json:"isUpvote"`
 }
 
 // VotesCreate creates a vote for a picture
@@ -32,6 +33,12 @@ func VotesCreate(c buffalo.Context) error {
 
 	// TODO: Update picture score here
 	// picture.ConfidenceLevel = ?
+	if votesCreateRequest.IsUpvote {
+		picture.Upvotes = picture.Upvotes + 1
+	} else {
+		picture.Downvotes = picture.Downvotes + 1
+	}
+
 	if err := tx.Save(&picture); err != nil {
 		return c.Render(500, r.JSON(M{"error": err.Error()}))
 	}

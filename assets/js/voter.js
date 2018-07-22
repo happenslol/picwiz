@@ -5,13 +5,17 @@ const mainImg2 = document.getElementById('main-2')
 const loadedImages = []
 const bufferElements = document.getElementsByClassName('preload')
 
+const waitingForImages = true
+
 for (let i = 0; i < bufferElements.length; i++) {
     bufferElements[i].addEventListener('load', ev => {
-        loadedImages.push({
+        addLoadedImage({
             ref: bufferElements[i],
             src: bufferElements[i].src,
         })
-
-        console.log(`image ${i} loaded!`)
     })
+}
+
+function addLoadedImage(loaded) {
+    loadedImages.push(loaded)
 }
