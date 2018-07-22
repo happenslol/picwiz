@@ -43,8 +43,14 @@ func VotesCreate(c buffalo.Context) error {
 		picture.Downvotes = picture.Downvotes + 1
 	}
 
-	picture.Sorting = float32(confidenceLevel(picture.Upvotes, picture.Downvotes))
-	picture.ConfidenceLevel = float32(math.Abs(float64(0.5-picture.Sorting)) * float64(picture.Upvotes+picture.Downvotes) / 10.0)
+	picture.Sorting = float32(
+		confidenceLevel(picture.Upvotes, picture.Downvotes),
+	)
+
+	picture.ConfidenceLevel = float32(
+		math.Abs(float64(0.5-picture.Sorting)) *
+			float64(picture.Upvotes+picture.Downvotes) / 10.0,
+	)
 
 	if err := tx.Save(&picture); err != nil {
 		return c.Render(500, r.JSON(M{"error": err.Error()}))
@@ -64,5 +70,7 @@ func confidenceLevel(ups uint32, downs uint32) float64 {
 	n := float64(ups + downs)
 	z := float64(1.64485) //1.0 = 85%, 1.6 = 95%
 	phat := float64(ups) / n
+
+	// TODO: Clean this clusterfuck up hannes
 	return (phat + z*z/(2*n) - z*math.Sqrt((phat*(1-phat)+z*z/(4*n))/n)) / (1 + z*z/n)
 }
