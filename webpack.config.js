@@ -12,7 +12,7 @@ const configurator = {
   entries: function(){
     var entries = {
       application: [
-        './assets/css/application.scss',
+        './assets/css/home.scss',
       ],
     }
     

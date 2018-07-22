@@ -83,10 +83,8 @@ func ImportsCreate(c buffalo.Context) error {
 	}
 
 	c.Logger().Infof("importing all files from %s", srcStr)
-	uuid, _ := uuid.NewV1()
-
 	toCreate := &models.Import{
-		ID:        uuid,
+		ID:        uuid.Must(uuid.NewV1()),
 		Author:    req.Author,
 		Source:    srcStr,
 		Processed: false,

@@ -19,6 +19,7 @@ type Picture struct {
 	Filename        string    `json:"filename" db:"filename"`
 	Hash            string    `json:"hash" db:"hash"`
 	Import          Import    `json:"-" belongs_to:"import"`
+	ImportID        uuid.UUID `json:"importId" db:"import_id"`
 	CreatedAt       time.Time `json:"createdAt" db:"created_at"`
 	UpdatedAt       time.Time `json:"updatedAt" db:"updated_at"`
 }

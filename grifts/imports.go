@@ -90,10 +90,12 @@ func processPendingImport(p models.Import) error {
 
 		picId := uuid.Must(uuid.NewV1())
 		picture := models.Picture{
-			ID:       picId,
-			Filename: f.Name(),
-			Hash:     hash,
-			Import:   p,
+			ID:              picId,
+			Filename:        f.Name(),
+			Hash:            hash,
+			ImportID:        p.ID,
+			ConfidenceLevel: 0.5,
+			Sorting:         0.5,
 		}
 
 		var resized []byte
@@ -122,12 +124,15 @@ func processPendingImport(p models.Import) error {
 			picId,
 		)
 
-		models.DB.Create(&picture)
+		if err := models.DB.Create(&picture); err != nil {
+			fmt.Printf("error saving image: %v\n", err)
+		}
+
 		bimg.Write(saveLoc, resized)
 	}
 
-	p.Processed = true
-	models.DB.Save(&p)
+	// p.Processed = true
+	// models.DB.Save(&p)
 
 	return nil
 }

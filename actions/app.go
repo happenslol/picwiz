@@ -1,6 +1,9 @@
 package actions
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/buffalo/middleware"
 	"github.com/gobuffalo/buffalo/middleware/ssl"
@@ -24,10 +27,10 @@ func App() *buffalo.App {
 			Env:         ENV,
 			SessionName: "_picwiz_session",
 		})
+
 		// TODO(hilmar): Do we want this?
 		// Automatically redirect to SSL
 		// app.Use(forceSSL())
-
 		if ENV == "development" {
 			app.Use(middleware.ParameterLogger)
 		}
@@ -44,7 +47,11 @@ func App() *buffalo.App {
 		app.POST("/imports", ImportsCreate)
 		app.POST("/pictures/{pictureId}/votes", VotesCreate)
 		app.GET("/pictures/hot", PicturesHot)
+		app.GET("/pictures/next", PicturesNext)
 
+		staticDir := fmt.Sprintf("%s/static", storagePath)
+
+		app.ServeFiles("/static", http.Dir(staticDir))
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
 	}
 
