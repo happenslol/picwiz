@@ -6,7 +6,7 @@ let activeBuffer = mainImg1
 let loadedImages = []
 const bufferElements = document.getElementsByClassName('preload')
 
-const waitingForImages = true
+let waitingForImages = true
 
 window.addEventListener('keyup', ev => {
     if (ev.keyCode === 65) {
