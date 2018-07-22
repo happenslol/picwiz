@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
@@ -26,19 +27,31 @@ func PicturesHot(c buffalo.Context) error {
 	return c.Render(200, r.JSON(nextPic.ID))
 }
 
+func biasedRandom(max int32) int32 {
+	rand.Seed(time.Now().UnixNano())
+
+	n := 4
+	unif := rand.Float64()
+
+	oneOver2N := 1 / math.Pow(2.0, float64(n))
+	oneOverXPlus1N := 1 / math.Pow(unif+1.0, float64(n))
+
+	random := (oneOverXPlus1N - oneOver2N) / (1 - oneOver2N)
+	return int32(random * float64(max))
+}
+
 // PicturesNext ...
 func PicturesNext(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
 	nextPic := models.Picture{}
 
 	count, _ := tx.Count(models.Picture{})
+	skip := biasedRandom(int32(count))
+
 	c.Logger().Debugf("%d pics in db", count)
 
-	rand.Seed(time.Now().UnixNano())
-	skip := rand.Intn(count)
-
 	query := fmt.Sprintf(
-		"SELECT * FROM pictures ORDER BY sorting DESC LIMIT 1 OFFSET %d",
+		"SELECT * FROM pictures WHERE sorting >= -3 ORDER BY confidence_level DESC LIMIT 1 OFFSET %d",
 		skip,
 	)
 
