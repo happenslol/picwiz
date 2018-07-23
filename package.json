@@ -6,6 +6,7 @@
   "repository": "github.com/gobuffalo/buffalo",
   "dependencies": {
     "font-awesome": "~4.7.0",
+    "hammerjs": "^2.0.8",
     "normalize-scss": "^7.0.1"
   },
   "devDependencies": {

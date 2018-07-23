@@ -99,7 +99,16 @@ func processPendingImport(p models.Import) error {
 		}
 
 		var resized []byte
+		buffer, err = bimg.NewImage(buffer).Convert(bimg.JPEG)
 		img := bimg.NewImage(buffer)
+		if err != nil {
+			fmt.Printf(
+				"\terror converting image: %s - %v\n",
+				filePath,
+				err,
+			)
+		}
+
 		dims, _ := img.Size()
 
 		if dims.Height > dims.Width {
