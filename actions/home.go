@@ -3,7 +3,6 @@ package actions
 import (
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/pop"
-	"github.com/happenslol/picwiz/models"
 )
 
 // HomeHandler is a default handler to serve up
@@ -11,16 +10,14 @@ import (
 func HomeHandler(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
 
-	picBuffer := models.Pictures{}
-	if err := tx.
-		RawQuery("SELECT * FROM pictures ORDER BY sorting LIMIT 5").
-		All(&picBuffer); err != nil {
-		return err
-	}
-
 	preloadImages := []string{}
-	for _, p := range picBuffer {
-		preloadImages = append(preloadImages, p.ID.String())
+	for i := 1; i < 5; i++ {
+		pic, err := getNextVotingPicture(tx)
+
+		if err != nil {
+			return c.Render(500, r.JSON(M{"error": err.Error()}))
+		}
+		preloadImages = append(preloadImages, pic.ID.String())
 	}
 
 	c.Set("preloadImages", preloadImages)

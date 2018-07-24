@@ -43,12 +43,20 @@ func biasedRandom(max int32) int32 {
 // PicturesNext ...
 func PicturesNext(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
+	nextPic, err := getNextVotingPicture(tx)
+
+	if err != nil {
+		return c.Render(500, r.JSON(M{"error": err.Error()}))
+	}
+
+	return c.Render(200, r.JSON(nextPic.ID))
+}
+
+func getNextVotingPicture(tx *pop.Connection) (*models.Picture, error) {
 	nextPic := models.Picture{}
 
 	count, _ := tx.Count(models.Picture{})
 	skip := biasedRandom(int32(count))
-
-	c.Logger().Debugf("%d pics in db", count)
 
 	query := fmt.Sprintf(
 		"SELECT * FROM pictures WHERE sorting >= -3 ORDER BY confidence_level DESC LIMIT 1 OFFSET %d",
@@ -58,8 +66,8 @@ func PicturesNext(c buffalo.Context) error {
 	err := tx.RawQuery(query).First(&nextPic)
 
 	if err != nil {
-		return c.Render(500, r.JSON(M{"error": err.Error()}))
+		return nil, err
 	}
 
-	return c.Render(200, r.JSON(nextPic.ID))
+	return &nextPic, nil
 }
