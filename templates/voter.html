@@ -4,10 +4,16 @@
     <title>Picwiz</title>
     <%= stylesheetTag("home.css") %>
     <link rel="icon" href="<%= assetPath("images/favicon.ico") %>">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.1/css/all.css" integrity="sha384-O8whS3fhG2OnA5Kas0Y9l3cfpmYjapjI0E4theH4iuMD+pLhbf6JI0jIMfYcK3yZ" crossorigin="anonymous">
 </head>
 <body>
     <div class="loading-overlay active" id="loading-overlay">
         <div class="spinner"></div>
+    </div>
+
+    <div class="vote-overlays" id="vote-overlay">
+        <div class="up" id="up-overlay"><i class="fas fa-thumbs-up"></i></div>
+        <div class="down" id="down-overlay"><i class="fas fa-thumbs-down"></i></div>
     </div>
 
     <div class="buffer">

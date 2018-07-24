@@ -6,7 +6,14 @@ const _backBuffer = document.getElementById('main-2')
 const _frontBufferMc = new Hammer(_frontBuffer)
 const _backBufferMc = new Hammer(_backBuffer)
 
+const voteOverlay = document.getElementById('vote-overlay')
+const upvoteOverlay = document.getElementById('up-overlay')
+const downvoteOverlay = document.getElementById('down-overlay')
+
 const loadingOverlay = document.getElementById('loading-overlay')
+
+let upvoteTriggered = false
+let downvoteTriggered = false
 
 const buffers = [
     {
@@ -21,13 +28,88 @@ const buffers = [
     },
 ]
 
+_frontBufferMc.add(new Hammer.Pan({
+    direction: Hammer.DIRECTION_HORIZONTAL,
+    threshold: 0,
+}))
+
+_backBufferMc.add(new Hammer.Pan({
+    direction: Hammer.DIRECTION_HORIZONTAL,
+    threshold: 0,
+}))
+
+_frontBuffer.addEventListener('dragstart', ev => ev.preventDefault())
+_backBuffer.addEventListener('dragstart', ev => ev.preventDefault())
+
+_frontBufferMc.on('pan', ev => handleBufferPan(0)(ev))
+_backBufferMc.on('pan', ev => handleBufferPan(1)(ev))
+
+_frontBufferMc.on('panend', ev => handleBufferPanEnd(0)(ev))
+_backBufferMc.on('panend', ev => handleBufferPanEnd(1)(ev))
+
 let frontBuffer = 0
+
+function handleBufferPan(bufferId) {
+    if (frontBuffer !== bufferId) return () => {}
+    return ev => {
+        const screenWidth = document.documentElement.clientWidth
+        let percentMoved = (ev.deltaX / screenWidth) * 2
+        let absMoved = Math.abs(percentMoved)
+        absMoved = absMoved > 1.0 ? 1.0 : absMoved
+        const t = 0.7 + (0.25 * absMoved)
+        const fb = getFrontBuffer()
+        const bb = getBackBuffer()
+
+        voteOverlay.classList.add('active')
+
+        fb.ref.style.transform = `translate3d(${ev.deltaX}px, 0, 0)`
+        bb.ref.style.transform = `scale3d(${t}, ${t}, 1.0)`
+
+        if (percentMoved > 0.35) {
+            downvoteOverlay.classList.add('active')
+        } else if (percentMoved < -0.35) {
+            upvoteOverlay.classList.add('active')
+        } else {
+            upvoteOverlay.classList.remove('active')
+            downvoteOverlay.classList.remove('active')
+        }
+    }
+}
+
+function handleBufferPanEnd(bufferId) {
+    if (frontBuffer !== bufferId) return () => {}
+    return ev => {
+        const fb = getFrontBuffer()
+        const bb = getBackBuffer()
+
+        fb.ref.classList.add('animating')
+        bb.ref.classList.add('animating')
+
+        console.dir(ev)
+
+        fb.ref.style = ''
+        bb.ref.style = ''
+
+        voteOverlay.classList.remove('active')
+
+        requestAnimationFrame(() => {
+            upvoteOverlay.classList.remove('active')
+            downvoteOverlay.classList.remove('active')
+        })
+
+        setTimeout(() => {
+            fb.ref.classList.remove('animating')
+            bb.ref.classList.remove('animating')
+        }, 260)
+    }
+}
 
 let loadedImages = []
 let initialized = false
 const bufferElements = document.getElementsByClassName('preload')
 
 let waitingForImages = true
+let animating = false
 
 window.addEventListener('keyup', ev => {
     if (waitingForImages) return

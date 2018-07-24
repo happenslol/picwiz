@@ -26,6 +26,7 @@ func App() *buffalo.App {
 		app = buffalo.New(buffalo.Options{
 			Env:         ENV,
 			SessionName: "_picwiz_session",
+			Addr:        "0.0.0.0:3000",
 		})
 
 		// TODO(hilmar): Do we want this?
