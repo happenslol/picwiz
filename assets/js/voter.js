@@ -67,11 +67,16 @@ function handleBufferPan(bufferId) {
 
         if (percentMoved > 0.35) {
             downvoteOverlay.classList.add('active')
+            downvoteTriggered = true
         } else if (percentMoved < -0.35) {
             upvoteOverlay.classList.add('active')
+            upvoteTriggered = true
         } else {
             upvoteOverlay.classList.remove('active')
             downvoteOverlay.classList.remove('active')
+
+            upvoteTriggered = false
+            downvoteTriggered = false
         }
     }
 }
@@ -90,7 +95,16 @@ function handleBufferPanEnd(bufferId) {
         fb.ref.style = ''
         bb.ref.style = ''
 
+        if (upvoteTriggered) {
+            voteCurrentPic(true)
+        } else if (downvoteTriggered) {
+            voteCurrentPic(false)
+        }
+
         voteOverlay.classList.remove('active')
+
+        upvoteTriggered = false
+        downvoteTriggered = false
 
         requestAnimationFrame(() => {
             upvoteOverlay.classList.remove('active')
@@ -166,10 +180,20 @@ function checkIfReady() {
 }
 
 function voteCurrentPic(isUpvote) {
-    const votedImageSrc = getFrontBuffer().ref.src
+    const fb = getFrontBuffer()
+    const votedImageSrc = fb.ref.src
+
     // TODO: send this (keep the id in a data attr maybe?)
 
-    const id = getFrontBuffer().id
+    if (isUpvote) {
+        fb.ref.classList.add('animating')
+        fb.ref.style.transform = 'translate3d(-200%, 0.0, 1.0)'
+    } else {
+        fb.ref.classList.add('animating')
+        fb.ref.style.transform = 'translate3d(200%, 0.0, 1.0)'
+    }
+
+    const id = fb.id
     fetch(`/pictures/${id}/votes`, {
         method: 'POST',
         headers: {
