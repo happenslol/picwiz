@@ -124,6 +124,9 @@ window.addEventListener('keyup', ev => {
 })
 
 for (let i = 0; i < bufferElements.length; i++) {
+    if (bufferElements[i].complete)
+        addLoadedImage(bufferElements[i])
+
     bufferElements[i].addEventListener('load', ev => {
         addLoadedImage(bufferElements[i])
     })
