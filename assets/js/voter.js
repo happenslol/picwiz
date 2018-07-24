@@ -6,14 +6,18 @@ const _backBuffer = document.getElementById('main-2')
 const _frontBufferMc = new Hammer(_frontBuffer)
 const _backBufferMc = new Hammer(_backBuffer)
 
+const loadingOverlay = document.getElementById('loading-overlay')
+
 const buffers = [
     {
         ref: _frontBuffer,
         mc: _frontBufferMc,
+        id: '',
     },
     {
         ref: _backBuffer,
         mc: _backBufferMc,
+        id: '',
     },
 ]
 
@@ -26,13 +30,13 @@ const bufferElements = document.getElementsByClassName('preload')
 let waitingForImages = true
 
 window.addEventListener('keyup', ev => {
+    if (waitingForImages) return
+
     if (ev.keyCode === 65) {
-        console.log('upvoted')
         voteCurrentPic(true)
     }
 
     if (ev.keyCode === 83) {
-        console.log('downvoted')
         voteCurrentPic(false)
     }
 })
@@ -51,17 +55,19 @@ function addLoadedImage(loaded) {
 
         initialized = true
 
-        const [ active, back ] = loadedImages.splice(0, 2)
+        const [ front, back ] = loadedImages.splice(0, 2)
+        const frontId = front.getAttribute('data-pic-id')
+        const backId = back.getAttribute('data-pic-id')
 
         getFrontBuffer().ref.classList.add('front')
         getBackBuffer().ref.classList.add('back')
 
-        setFrontBuffer(active)
-        setBackBuffer(back)
+        setFrontBuffer(front, frontId)
+        setBackBuffer(back, backId)
 
-        ;[active, back].forEach(it => loadNewImage(it))
+        ;[front, back].forEach(it => loadNewImage(it))
 
-        waitingForImages = false
+        setWaiting(false)
     }
 
     if (waitingForImages)
@@ -71,16 +77,29 @@ function addLoadedImage(loaded) {
 function checkIfReady() {
     // we are only waiting for images if literally none are loaded
     // (to replace the back buffer on swap)
-    waitingForImages = loadedImages.length === 0
+    setWaiting(loadedImages.length === 0)
 }
 
 function voteCurrentPic(isUpvote) {
     const votedImageSrc = getFrontBuffer().ref.src
     // TODO: send this (keep the id in a data attr maybe?)
 
+    const id = getFrontBuffer().id
+    fetch(`/pictures/${id}/votes`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isUpvote }),
+    })
+        .then(res => {})
+        .catch(err => console.error(`error voting: ${err}`))
+
     const [ nextImageElem ] = loadedImages.splice(0, 1)
+    const nextImageId = nextImageElem.getAttribute('data-pic-id')
+
     swapBuffers()
-    setBackBuffer(nextImageElem)
+    setBackBuffer(nextImageElem, nextImageId)
     loadNewImage(nextImageElem)
 
     checkIfReady()
@@ -92,6 +111,7 @@ function loadNewImage(bufferElem) {
         .then(res => res.json())
         .then(res => {
             bufferElem.src = `/static/${res}.jpg`
+            bufferElem.setAttribute('data-pic-id', res)
             checkIfReady()
         })
         .catch(err => console.log(`error getting next id: ${err}`))
@@ -99,8 +119,17 @@ function loadNewImage(bufferElem) {
 
 function getFrontBuffer() { return buffers[frontBuffer] }
 function getBackBuffer() { return buffers[1 - frontBuffer] }
-function setFrontBuffer(elem) { buffers[frontBuffer].ref.src = elem.src }
-function setBackBuffer(elem) { buffers[1 - frontBuffer].ref.src = elem.src }
+
+function setFrontBuffer(elem, id) {
+    buffers[frontBuffer].ref.src = elem.src
+    buffers[frontBuffer].id = id
+}
+
+function setBackBuffer(elem, id) {
+    buffers[1 - frontBuffer].ref.src = elem.src
+    buffers[1 - frontBuffer].id = id
+}
+
 function swapBuffers() {
     getFrontBuffer().ref.classList.remove('front')
     getFrontBuffer().ref.classList.add('back')
@@ -109,4 +138,11 @@ function swapBuffers() {
     getBackBuffer().ref.classList.add('front')
 
     frontBuffer = 1 - frontBuffer
+}
+
+function setWaiting(isWaiting) {
+    waitingForImages = isWaiting
+
+    if (isWaiting) loadingOverlay.classList.add('active')
+    else loadingOverlay.classList.remove('active')
 }

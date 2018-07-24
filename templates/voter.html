@@ -6,9 +6,18 @@
     <link rel="icon" href="<%= assetPath("images/favicon.ico") %>">
 </head>
 <body>
+    <div class="loading-overlay active" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
     <div class="buffer">
         <%= for (id) in preloadImages { %>
-        <img class="preload" src="/static/<%= id %>.jpg" alt="<%= id %>">
+        <img
+            class="preload"
+            src="/static/<%= id %>.jpg"
+            alt="<%= id %>"
+            data-pic-id="<%= id %>"
+        >
         <% } %>
     </div>
 
