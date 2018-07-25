@@ -12,9 +12,6 @@ const downvoteOverlay = document.getElementById('down-overlay')
 
 const loadingOverlay = document.getElementById('loading-overlay')
 
-let upvoteTriggered = false
-let downvoteTriggered = false
-
 const buffers = [
     {
         ref: _frontBuffer,
@@ -41,11 +38,11 @@ _backBufferMc.add(new Hammer.Pan({
 _frontBuffer.addEventListener('dragstart', ev => ev.preventDefault())
 _backBuffer.addEventListener('dragstart', ev => ev.preventDefault())
 
-_frontBufferMc.on('pan', ev => handleBufferPan(0)(ev))
-_backBufferMc.on('pan', ev => handleBufferPan(1)(ev))
+_frontBufferMc.on('panleft panright', ev => handleBufferPan(0)(ev))
+_backBufferMc.on('panleft panright', ev => handleBufferPan(1)(ev))
 
-_frontBufferMc.on('panend', ev => handleBufferPanEnd(0)(ev))
-_backBufferMc.on('panend', ev => handleBufferPanEnd(1)(ev))
+_frontBufferMc.on('panend pancancel', ev => handleBufferPanEnd(0)(ev))
+_backBufferMc.on('panend pancancel', ev => handleBufferPanEnd(1)(ev))
 
 let frontBuffer = 0
 
@@ -55,7 +52,7 @@ function handleBufferPan(bufferId) {
         const screenWidth = document.documentElement.clientWidth
         let percentMoved = (ev.deltaX / screenWidth) * 2
         let absMoved = Math.abs(percentMoved)
-        absMoved = absMoved > 1.0 ? 1.0 : absMoved
+        absMoved = absMoved > 1.0 ? 1.0 : (Math.floor(absMoved * 100) / 100)
         const t = 0.7 + (0.25 * absMoved)
         const fb = getFrontBuffer()
         const bb = getBackBuffer()
@@ -65,18 +62,13 @@ function handleBufferPan(bufferId) {
         fb.ref.style.transform = `translate3d(${ev.deltaX}px, 0, 0)`
         bb.ref.style.transform = `scale3d(${t}, ${t}, 1.0)`
 
-        if (percentMoved > 0.35) {
+        if (percentMoved > 0.5) {
             downvoteOverlay.classList.add('active')
-            downvoteTriggered = true
-        } else if (percentMoved < -0.35) {
+        } else if (percentMoved < -0.5) {
             upvoteOverlay.classList.add('active')
-            upvoteTriggered = true
         } else {
             upvoteOverlay.classList.remove('active')
             downvoteOverlay.classList.remove('active')
-
-            upvoteTriggered = false
-            downvoteTriggered = false
         }
     }
 }
@@ -87,39 +79,42 @@ function handleBufferPanEnd(bufferId) {
         const fb = getFrontBuffer()
         const bb = getBackBuffer()
 
-        fb.ref.classList.add('animating')
-        bb.ref.classList.add('animating')
+        const screenWidth = document.documentElement.clientWidth
+        let percentMoved = (ev.deltaX / screenWidth) * 2
+        let absMoved = Math.abs(percentMoved)
+        absMoved = absMoved > 1.0 ? 1.0 : (Math.floor(absMoved * 100) / 100)
+        const t = 0.7 + (0.25 * absMoved)
 
-        console.dir(ev)
-
-        fb.ref.style = ''
-        bb.ref.style = ''
-
-        if (upvoteTriggered) {
-            voteCurrentPic(true)
-        } else if (downvoteTriggered) {
+        if (percentMoved > 0.5) {
             voteCurrentPic(false)
+        } else if (percentMoved < -0.5) {
+            voteCurrentPic(true)
+        } else {
+            fb.ref.classList.add('animating')
+            bb.ref.classList.add('animating')
+
+            fb.ref.style = ''
+            bb.ref.style = ''
+
+            setTimeout(() => {
+                requestAnimationFrame(() => {
+                    fb.ref.classList.remove('animating')
+                    bb.ref.classList.remove('animating')
+                })
+            }, 250)
         }
 
         voteOverlay.classList.remove('active')
-
-        upvoteTriggered = false
-        downvoteTriggered = false
-
         requestAnimationFrame(() => {
             upvoteOverlay.classList.remove('active')
             downvoteOverlay.classList.remove('active')
         })
-
-        setTimeout(() => {
-            fb.ref.classList.remove('animating')
-            bb.ref.classList.remove('animating')
-        }, 260)
     }
 }
 
 let loadedImages = []
 let initialized = false
+
 const bufferElements = document.getElementsByClassName('preload')
 
 let waitingForImages = true
@@ -181,17 +176,49 @@ function checkIfReady() {
 
 function voteCurrentPic(isUpvote) {
     const fb = getFrontBuffer()
+    const bb = getBackBuffer()
     const votedImageSrc = fb.ref.src
 
-    // TODO: send this (keep the id in a data attr maybe?)
+    fb.ref.classList.add('animating')
+    bb.ref.classList.add('animating')
+
+    bb.ref.style.transform = 'scale3d(1.0, 1.0, 1.0)'
 
     if (isUpvote) {
-        fb.ref.classList.add('animating')
-        fb.ref.style.transform = 'translate3d(-200%, 0.0, 1.0)'
+        fb.ref.style.transform = 'translate3d(-100%, 0, 0)'
     } else {
-        fb.ref.classList.add('animating')
-        fb.ref.style.transform = 'translate3d(200%, 0.0, 1.0)'
+        fb.ref.style.transform = 'translate3d(100%, 0, 0)'
     }
+
+    setTimeout(() => {
+        requestAnimationFrame(() => {
+            fb.ref.classList.remove('animating')
+            bb.ref.classList.remove('animating')
+
+            getFrontBuffer().ref.classList.remove('front')
+            getBackBuffer().ref.classList.remove('back')
+
+            fb.ref.style = ''
+            bb.ref.style = ''
+
+            const [ nextImageElem ] = loadedImages.splice(0, 1)
+            const nextImageId = nextImageElem.getAttribute('data-pic-id')
+
+            frontBuffer = 1 - frontBuffer
+
+            getFrontBuffer().ref.classList.add('front')
+            getBackBuffer().ref.classList.add('back')
+
+            requestAnimationFrame(() => {
+                setBackBuffer(nextImageElem, nextImageId)
+                loadNewImage(nextImageElem)
+            })
+
+            checkIfReady()
+
+            if (waitingForImages) {} // TODO: Check if we even ever need this
+        })
+    }, 250)
 
     const id = fb.id
     fetch(`/pictures/${id}/votes`, {
@@ -204,15 +231,6 @@ function voteCurrentPic(isUpvote) {
         .then(res => {})
         .catch(err => console.error(`error voting: ${err}`))
 
-    const [ nextImageElem ] = loadedImages.splice(0, 1)
-    const nextImageId = nextImageElem.getAttribute('data-pic-id')
-
-    swapBuffers()
-    setBackBuffer(nextImageElem, nextImageId)
-    loadNewImage(nextImageElem)
-
-    checkIfReady()
-    if (waitingForImages) {} // TODO: Check if we even ever need this
 }
 
 function loadNewImage(bufferElem) {
@@ -237,16 +255,6 @@ function setFrontBuffer(elem, id) {
 function setBackBuffer(elem, id) {
     buffers[1 - frontBuffer].ref.src = elem.src
     buffers[1 - frontBuffer].id = id
-}
-
-function swapBuffers() {
-    getFrontBuffer().ref.classList.remove('front')
-    getFrontBuffer().ref.classList.add('back')
-
-    getBackBuffer().ref.classList.remove('back')
-    getBackBuffer().ref.classList.add('front')
-
-    frontBuffer = 1 - frontBuffer
 }
 
 function setWaiting(isWaiting) {

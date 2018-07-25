@@ -4,13 +4,18 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
+	_ "image/png"
+	"io/ioutil"
+	"os"
 
 	"github.com/gobuffalo/uuid"
 	"github.com/happenslol/picwiz/models"
 	"github.com/markbates/grift/grift"
+	"github.com/nfnt/resize"
 	"github.com/spaolacci/murmur3"
 	"github.com/spf13/afero"
-	bimg "gopkg.in/h2non/bimg.v1"
 )
 
 var _ = grift.Namespace("imports", func() {
@@ -73,19 +78,27 @@ func processPendingImport(p models.Import) error {
 
 		fmt.Printf("\timporting file %s\n", filePath)
 
-		buffer, err := bimg.Read(filePath)
+		file, err := os.Open(filePath)
+		defer file.Close()
 		if err != nil {
-			fmt.Printf(
-				"\terror importing image: %s - %v\n",
-				filePath,
-				err,
-			)
+			fmt.Printf("\terror opening image: %v\n", err)
+			continue
 		}
 
-		err = nil
+		decoded, _, err := image.Decode(file)
+		if err != nil {
+			fmt.Printf("\terror decoding image: %v\n", err)
+			continue
+		}
+
+		bytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Printf("\terror reading image bytes: %v\n", err)
+			continue
+		}
 
 		hasher := murmur3.New128()
-		hasher.Write(buffer)
+		hasher.Write(bytes)
 		hash := hex.EncodeToString(hasher.Sum(nil))
 
 		picId := uuid.Must(uuid.NewV1())
@@ -98,32 +111,18 @@ func processPendingImport(p models.Import) error {
 			Sorting:         0.5,
 		}
 
-		var resized []byte
-		buffer, err = bimg.NewImage(buffer).Convert(bimg.JPEG)
-		img := bimg.NewImage(buffer)
-		if err != nil {
-			fmt.Printf(
-				"\terror converting image: %s - %v\n",
-				filePath,
-				err,
-			)
-		}
+		b := decoded.Bounds()
 
-		dims, _ := img.Size()
-
-		if dims.Height > dims.Width {
-			resized, err = bimg.Resize(buffer, resizeOptsLandscape)
+		var outX, outY uint
+		if b.Dx() > b.Dy() {
+			outX = 1920
+			outY = 0
 		} else {
-			resized, err = bimg.Resize(buffer, resizeOptsPortrait)
+			outY = 1920
+			outX = 0
 		}
 
-		if err != nil {
-			fmt.Printf(
-				"\terror resizing image: %s - %v",
-				filePath,
-				err,
-			)
-		}
+		resized := resize.Resize(outX, outY, decoded, resize.Lanczos3)
 
 		saveLoc := fmt.Sprintf(
 			"%s%sstatic%s%s.jpg",
@@ -133,11 +132,19 @@ func processPendingImport(p models.Import) error {
 			picId,
 		)
 
-		if err := models.DB.Create(&picture); err != nil {
-			fmt.Printf("error saving image: %v\n", err)
+		out, err := os.Create(saveLoc)
+		defer out.Close()
+		if err != nil {
+			fmt.Printf("\terror creating file: %v\n", err)
+			continue
 		}
 
-		bimg.Write(saveLoc, resized)
+		if err := models.DB.Create(&picture); err != nil {
+			fmt.Printf("error saving image: %v\n", err)
+			continue
+		}
+
+		jpeg.Encode(out, resized, nil)
 	}
 
 	// p.Processed = true
