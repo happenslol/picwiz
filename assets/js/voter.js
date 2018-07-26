@@ -54,6 +54,7 @@ function handleBufferPan(bufferId) {
         let absMoved = Math.abs(percentMoved)
         absMoved = absMoved > 1.0 ? 1.0 : (Math.floor(absMoved * 100) / 100)
         const t = 0.7 + (0.25 * absMoved)
+        const o = 0.9 * absMoved
         const fb = getFrontBuffer()
         const bb = getBackBuffer()
 
@@ -61,6 +62,7 @@ function handleBufferPan(bufferId) {
 
         fb.ref.style.transform = `translate3d(${ev.deltaX}px, 0, 0)`
         bb.ref.style.transform = `scale3d(${t}, ${t}, 1.0)`
+        bb.ref.style.opacity = `${o}`
 
         if (percentMoved > 0.5) {
             downvoteOverlay.classList.add('active')
@@ -183,6 +185,7 @@ function voteCurrentPic(isUpvote) {
     bb.ref.classList.add('animating')
 
     bb.ref.style.transform = 'scale3d(1.0, 1.0, 1.0)'
+    bb.ref.style.opacity = '1'
 
     if (isUpvote) {
         fb.ref.style.transform = 'translate3d(-100%, 0, 0)'
