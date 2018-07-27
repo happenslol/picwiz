@@ -59,7 +59,7 @@ func getNextVotingPicture(tx *pop.Connection) (*models.Picture, error) {
 	skip := biasedRandom(int32(count))
 
 	query := fmt.Sprintf(
-		"SELECT * FROM pictures WHERE sorting >= -3 ORDER BY confidence_level DESC LIMIT 1 OFFSET %d",
+		"SELECT * FROM pictures WHERE sorting >= -3 ORDER BY confidence_level ASC LIMIT 1 OFFSET %d",
 		skip,
 	)
 
