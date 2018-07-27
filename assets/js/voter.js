@@ -263,6 +263,6 @@ function setBackBuffer(elem, id) {
 function setWaiting(isWaiting) {
     waitingForImages = isWaiting
 
-    if (isWaiting) loadingOverlay.classList.add('active')
-    else loadingOverlay.classList.remove('active')
+    // if (isWaiting) loadingOverlay.classList.add('active')
+    // else loadingOverlay.classList.remove('active')
 }
