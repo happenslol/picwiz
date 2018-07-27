@@ -135,7 +135,7 @@ func processImage(
 
 	hasher := murmur3.New128()
 	hasher.Write(bytes)
-	hash := hex.EncodeToString(hasher.Sum(nil))
+	hash := hex.EncodeToString(hasher.Sum(bytes))
 
 	picId := uuid.Must(uuid.NewV1())
 	picture := models.Picture{

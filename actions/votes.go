@@ -64,7 +64,8 @@ func confidenceLevel(ups uint32, downs uint32) float64 {
 		if downs == 0 {
 			return 0.5
 		}
-		return float64(-downs)
+
+		return float64(-(int32(downs)))
 	}
 
 	n := float64(ups + downs)
