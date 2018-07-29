@@ -48,6 +48,7 @@ func App() *buffalo.App {
 		app.POST("/pictures/{pictureId}/votes", VotesCreate)
 		app.GET("/pictures/hot", PicturesHot)
 		app.GET("/pictures/next", PicturesNext)
+		app.GET("/stats", RenderStatsPage)
 
 		staticDir := fmt.Sprintf("%s/static", storagePath)
 
