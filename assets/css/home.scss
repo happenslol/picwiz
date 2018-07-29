@@ -12,6 +12,10 @@ body, html {
     background-color: #000;
 }
 
+body.animating {
+    pointer-events: none;
+}
+
 .loading-overlay {
     position: absolute;
     z-index: 100;
@@ -127,7 +131,7 @@ body, html {
 
         &.animating {
             pointer-events: none;
-            transition: transform .25s ease-out;
+            transition: transform .15s linear;
         }
     }
 }
