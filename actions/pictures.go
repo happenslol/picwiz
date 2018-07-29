@@ -55,7 +55,15 @@ func PicturesNext(c buffalo.Context) error {
 func getNextVotingPicture(tx *pop.Connection) (*models.Picture, error) {
 	nextPic := models.Picture{}
 
-	count, _ := tx.Count(models.Picture{})
+	var count int
+	err := tx.
+		RawQuery("SELECT count(*) FROM pictures WHERE sorting >= -3").
+		First(&count)
+
+	if err != nil {
+		return nil, err
+	}
+
 	skip := biasedRandom(int32(count))
 
 	query := fmt.Sprintf(
@@ -63,7 +71,7 @@ func getNextVotingPicture(tx *pop.Connection) (*models.Picture, error) {
 		skip,
 	)
 
-	err := tx.RawQuery(query).First(&nextPic)
+	err = tx.RawQuery(query).First(&nextPic)
 
 	if err != nil {
 		return nil, err
