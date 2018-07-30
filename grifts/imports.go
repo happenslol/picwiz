@@ -344,8 +344,8 @@ func processImage(
 		Filename:        f.Name(),
 		Hash:            hash,
 		ImportID:        importID,
-		ConfidenceLevel: 0.5,
-		Sorting:         0.5,
+		ConfidenceLevel: 0.0,
+		Sorting:         0.0,
 	}
 
 	b := decoded.Bounds()
