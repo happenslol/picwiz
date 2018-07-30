@@ -63,6 +63,46 @@ var _ = grift.Namespace("imports", func() {
 
 		return nil
 	})
+
+	grift.Desc("dedupe", "Dedupes using hash")
+	grift.Add("dedupe", func(c *grift.Context) error {
+		// dedupe after rehashing
+		duplicateHashes := []string{}
+		if err := models.DB.RawQuery(
+			"SELECT DISTINCT hash FROM pictures WHERE " +
+				"hash in (SELECT hash FROM pictures GROUP BY " +
+				"hash HAVING COUNT(*) > 1)",
+		).All(&duplicateHashes); err != nil {
+			return err
+		}
+
+		for _, h := range duplicateHashes {
+			query := fmt.Sprintf(
+				"SELECT * FROM pictures WHERE hash='%s'", h,
+			)
+
+			pics := models.Pictures{}
+			if err := models.DB.RawQuery(query).All(&pics); err != nil {
+				return err
+			}
+
+			if len(pics) == 0 {
+				continue
+			}
+
+			deleteQuery := fmt.Sprintf(
+				"DELETE FROM pictures WHERE hash='%s' AND id != '%s'",
+				pics[0].Hash,
+				pics[0].ID.String(),
+			)
+
+			if err := models.DB.RawQuery(deleteQuery).Exec(); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 })
 
 func hashImport(i models.Import) error {
@@ -247,7 +287,7 @@ func processImage(
 
 	hasher := murmur3.New128()
 	hasher.Write(bytes)
-	hash := hex.EncodeToString(hasher.Sum(bytes))
+	hash := hex.EncodeToString(hasher.Sum(nil))
 
 	picId := uuid.Must(uuid.NewV1())
 	picture := models.Picture{
