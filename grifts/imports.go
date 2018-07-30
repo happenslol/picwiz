@@ -9,8 +9,10 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 
+	"github.com/gobuffalo/pop"
 	"github.com/gobuffalo/uuid"
 	"github.com/happenslol/picwiz/models"
 	"github.com/markbates/grift/grift"
@@ -66,42 +68,90 @@ var _ = grift.Namespace("imports", func() {
 
 	grift.Desc("dedupe", "Dedupes using hash")
 	grift.Add("dedupe", func(c *grift.Context) error {
-		// dedupe after rehashing
-		duplicateHashes := []string{}
-		if err := models.DB.RawQuery(
-			"SELECT DISTINCT hash FROM pictures WHERE " +
-				"hash in (SELECT hash FROM pictures GROUP BY " +
-				"hash HAVING COUNT(*) > 1)",
-		).All(&duplicateHashes); err != nil {
-			return err
-		}
-
-		for _, h := range duplicateHashes {
-			query := fmt.Sprintf(
-				"SELECT * FROM pictures WHERE hash='%s'", h,
-			)
-
-			pics := models.Pictures{}
-			if err := models.DB.RawQuery(query).All(&pics); err != nil {
+		return models.DB.Transaction(func(tx *pop.Connection) {
+			// dedupe after rehashing
+			duplicateHashes := []string{}
+			if err := tx.RawQuery(
+				"SELECT DISTINCT hash FROM pictures WHERE " +
+					"hash in (SELECT hash FROM pictures GROUP BY " +
+					"hash HAVING COUNT(*) > 1)",
+			).All(&duplicateHashes); err != nil {
 				return err
 			}
 
-			if len(pics) == 0 {
-				continue
+			for _, h := range duplicateHashes {
+				query := fmt.Sprintf(
+					"SELECT * FROM pictures WHERE hash='%s'", h,
+				)
+
+				pics := models.Pictures{}
+				if err := tx.RawQuery(query).All(&pics); err != nil {
+					return err
+				}
+
+				if len(pics) == 0 {
+					continue
+				}
+
+				first := pics[0]
+
+				ids := []string{}
+				for i, pic := range pics {
+					if i == 0 {
+						continue
+					}
+
+					quoted := fmt.Sprintf("'%s'", pic.ID.String())
+					ids = append(ids, quoted)
+				}
+
+				arg := strings.Join(ids, ",")
+
+				voteQuery := fmt.Sprintf(
+					"SELECT * FROM votes WHERE picture_id IN (%s)",
+					arg,
+				)
+
+				votes := models.Votes{}
+				if err := tx.RawQuery(voteQuery).All(&votes); err != nil {
+					return err
+				}
+
+				for _, v := range votes {
+					v.PictureID = first.ID
+					if err := tx.Save(&v); err != nil {
+						return err
+					}
+				}
+
+				otherPics := models.Pictures{}
+				picsQuery := fmt.Sprintf("SELECT * FROM picturse WHERE id IN (%s)", arg)
+				if err := tx.RawQuery(picsQuery).All(&otherPics); err != nil {
+					return err
+				}
+
+				for _, p := range otherPics {
+					first.Upvotes += p.Upvotes
+					first.Downvotes += p.Downvotes
+				}
+
+				if err := tx.Save(&first); err != nil {
+					return err
+				}
+
+				deleteQuery := fmt.Sprintf(
+					"DELETE FROM pictures WHERE hash='%s' AND id != '%s'",
+					pics[0].Hash,
+					pics[0].ID.String(),
+				)
+
+				if err := tx.RawQuery(deleteQuery).Exec(); err != nil {
+					return err
+				}
 			}
 
-			deleteQuery := fmt.Sprintf(
-				"DELETE FROM pictures WHERE hash='%s' AND id != '%s'",
-				pics[0].Hash,
-				pics[0].ID.String(),
-			)
-
-			if err := models.DB.RawQuery(deleteQuery).Exec(); err != nil {
-				return err
-			}
-		}
-
-		return nil
+			return nil
+		})
 	})
 })
 
