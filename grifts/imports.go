@@ -124,7 +124,7 @@ var _ = grift.Namespace("imports", func() {
 				}
 
 				otherPics := models.Pictures{}
-				picsQuery := fmt.Sprintf("SELECT * FROM picturse WHERE id IN (%s)", arg)
+				picsQuery := fmt.Sprintf("SELECT * FROM pictures WHERE id IN (%s)", arg)
 				if err := tx.RawQuery(picsQuery).All(&otherPics); err != nil {
 					return err
 				}
