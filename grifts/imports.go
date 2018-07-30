@@ -68,7 +68,7 @@ var _ = grift.Namespace("imports", func() {
 
 	grift.Desc("dedupe", "Dedupes using hash")
 	grift.Add("dedupe", func(c *grift.Context) error {
-		return models.DB.Transaction(func(tx *pop.Connection) {
+		return models.DB.Transaction(func(tx *pop.Connection) error {
 			// dedupe after rehashing
 			duplicateHashes := []string{}
 			if err := tx.RawQuery(
