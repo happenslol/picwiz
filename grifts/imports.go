@@ -72,9 +72,8 @@ var _ = grift.Namespace("imports", func() {
 			// dedupe after rehashing
 			duplicateHashes := []string{}
 			if err := tx.RawQuery(
-				"SELECT DISTINCT hash FROM pictures WHERE " +
-					"hash in (SELECT hash FROM pictures GROUP BY " +
-					"hash HAVING COUNT(*) > 1)",
+				"SELECT hash FROM pictures GROUP BY " +
+					"hash HAVING COUNT(*) > 1",
 			).All(&duplicateHashes); err != nil {
 				return err
 			}
