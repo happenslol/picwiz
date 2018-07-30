@@ -9,8 +9,14 @@ import (
 )
 
 type Stats struct {
-	Votes    int32
-	Pictures int32
+	Votes      int32
+	Pictures   int32
+	VoteCounts []voteCount
+}
+
+type voteCount struct {
+	Votes int32 `db:"votes"`
+	Count int32 `db:"count"`
 }
 
 // GetVoteCount gets total vote count
@@ -39,11 +45,26 @@ func GetPictureCount(tx *pop.Connection) int32 {
 	return int32(count)
 }
 
+func getPicturesPerVotes(tx *pop.Connection) []voteCount {
+
+	counts := []voteCount{}
+
+	err := tx.
+		RawQuery("SELECT sub.votes, count(*) FROM (SELECT (upvotes + downvotes) as votes FROM pictures) sub GROUP BY votes").
+		All(&counts)
+
+	if err != nil {
+		fmt.Printf("Orror du nap!! (picture vote count)%v\n", err)
+	}
+	return counts
+}
+
 // GetStats gets all stats
 func getStats(tx *pop.Connection) Stats {
 	return Stats{
-		Votes:    GetVoteCount(tx),
-		Pictures: GetPictureCount(tx),
+		Votes:      GetVoteCount(tx),
+		Pictures:   GetPictureCount(tx),
+		VoteCounts: getPicturesPerVotes(tx),
 	}
 }
 
