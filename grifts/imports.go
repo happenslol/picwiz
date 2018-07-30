@@ -44,7 +44,116 @@ var _ = grift.Namespace("imports", func() {
 
 		return nil
 	})
+
+	grift.Desc("rehash", "Calculates new hashes for all processed imports")
+	grift.Add("rehash", func(c *grift.Context) error {
+		// get all processed imports
+		processed := models.Imports{}
+		if err := models.DB.RawQuery(
+			"SELECT * FROM imports WHERE processed=true",
+		).All(&processed); err != nil {
+			return err
+		}
+
+		for _, i := range processed {
+			if err := hashImport(i); err != nil {
+				fmt.Printf("error while hashing import: %v\n", err)
+			}
+		}
+
+		return nil
+	})
 })
+
+func hashImport(i models.Import) error {
+	fmt.Printf("rehashing import %s\n", i.ID.String())
+
+	loc := fmt.Sprintf(
+		"%s%simports%s%s",
+		storagePath,
+		afero.FilePathSeparator,
+		afero.FilePathSeparator,
+		i.ID,
+	)
+
+	isDir, _ := afero.IsDir(fs, loc)
+	if !isDir {
+		return errors.New(
+			fmt.Sprintf("%s was not a directory\n", loc),
+		)
+	}
+
+	query := fmt.Sprintf(
+		"SELECT * FROM pictures WHERE import_id='%s'",
+		i.ID.String(),
+	)
+
+	pics := models.Pictures{}
+	if err := models.DB.RawQuery(query).All(&pics); err != nil {
+		return err
+	}
+
+	concurrency := 3
+	sem := make(chan bool, concurrency)
+
+	all := len(pics)
+	var wg sync.WaitGroup
+	wg.Add(all)
+	for _, p := range pics {
+		sem <- true
+		go func() {
+			o := fmt.Sprintf(
+				"%s%s%s",
+				loc,
+				afero.FilePathSeparator,
+				p.Filename,
+			)
+
+			if err := hashPicture(o, p, &wg, sem); err != nil {
+				fmt.Printf("\terror hashing picture: %v\n", err)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
+func hashPicture(
+	loc string,
+	p models.Picture,
+	wg *sync.WaitGroup,
+	sem chan bool,
+) error {
+	defer func() {
+		<-sem
+		wg.Done()
+	}()
+
+	fmt.Printf("\trehashing picture %s: %s\n", loc, p.ID.String())
+
+	file, err := os.Open(loc)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	hasher := murmur3.New128()
+	hasher.Write(bytes)
+	p.Hash = hex.EncodeToString(hasher.Sum(nil))
+
+	if err := models.DB.Save(&p); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func processPendingImport(p models.Import) error {
 	loc := fmt.Sprintf(
@@ -95,7 +204,10 @@ func processImage(
 	i int,
 	all int,
 ) {
-	defer func() { <-sem }()
+	defer func() {
+		<-sem
+		wg.Done()
+	}()
 
 	if f.IsDir() {
 		wg.Done()
@@ -181,5 +293,4 @@ func processImage(
 	}
 
 	jpeg.Encode(out, resized, nil)
-	wg.Done()
 }
