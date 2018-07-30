@@ -140,8 +140,8 @@ var _ = grift.Namespace("imports", func() {
 
 				deleteQuery := fmt.Sprintf(
 					"DELETE FROM pictures WHERE hash='%s' AND id != '%s'",
-					pics[0].Hash,
-					pics[0].ID.String(),
+					first.Hash,
+					first.ID.String(),
 				)
 
 				if err := tx.RawQuery(deleteQuery).Exec(); err != nil {
