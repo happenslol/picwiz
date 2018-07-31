@@ -312,23 +312,10 @@ func processImage(
 
 	fmt.Printf("\t(%d/%d) importing file %s\n", i+1, all, filePath)
 
-	fileForDecode, err := os.Open(filePath)
-	defer fileForDecode.Close()
-	if err != nil {
-		fmt.Printf("\terror opening image: %v\n", err)
-		return
-	}
-
 	fileForHash, err := os.Open(filePath)
 	defer fileForHash.Close()
 	if err != nil {
 		fmt.Printf("\terror opening image: %v\n", err)
-		return
-	}
-
-	decoded, _, err := image.Decode(fileForDecode)
-	if err != nil {
-		fmt.Printf("\terror decoding image: %v\n", err)
 		return
 	}
 
@@ -363,6 +350,19 @@ func processImage(
 
 	if count > 0 {
 		fmt.Printf("\tskipping duplicate file: %v: %s\n", f.Name(), hash)
+		return
+	}
+
+	fileForDecode, err := os.Open(filePath)
+	defer fileForDecode.Close()
+	if err != nil {
+		fmt.Printf("\terror opening image: %v\n", err)
+		return
+	}
+
+	decoded, _, err := image.Decode(fileForDecode)
+	if err != nil {
+		fmt.Printf("\terror decoding image: %v\n", err)
 		return
 	}
 
