@@ -347,19 +347,19 @@ func processImage(
 		ConfidenceLevel: 0.0,
 		Sorting:         0.0,
 	}
-	query := fmt.Sprintf(
-		"SELECT * FROM pictures WHERE hash = %s",
-		hash
-	)
 
-	pics := []models.Picture{}
+	count, err := models.DB.
+		Where("hash = ?", hash).
+		Count(&models.Pictures{})
 
-	models.DB.
-		RawQuery(query).
-		All(&pics)
+	if err != nil {
+		fmt.Printf("\terror checking dupes: %v\n", err)
+		wg.Done()
+		return
+	}
 
-	if len(s) > 0 {
-		fmt.Printf("\tskipping dublicate file: %v\n", f.Name())
+	if count > 0 {
+		fmt.Printf("\tskipping duplicate file: %v\n", f.Name())
 		wg.Done()
 		return
 	}
