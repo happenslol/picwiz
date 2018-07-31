@@ -359,7 +359,7 @@ func processImage(
 		All(&pics)
 
 	if len(s) > 0 {
-		fmt.Printf("\tskippin dublicate file: %v\n", f.Name())
+		fmt.Printf("\tskipping dublicate file: %v\n", f.Name())
 		wg.Done()
 		return
 	}
