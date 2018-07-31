@@ -12,6 +12,7 @@ type Stats struct {
 	Votes      int32
 	Pictures   int32
 	VoteCounts []voteCount
+	AllVotes   []models.Vote
 }
 
 type voteCount struct {
@@ -59,12 +60,25 @@ func getPicturesPerVotes(tx *pop.Connection) []voteCount {
 	return counts
 }
 
+func getAllVotes(tx *pop.Connection) []models.Vote {
+	votes := []models.Vote{}
+	err := tx.
+		RawQuery("SELECT * FROM votes").
+		All(&votes)
+
+	if err != nil {
+		fmt.Printf("Orror du nap!! (picture vote count)%v\n", err)
+	}
+	return votes
+}
+
 // GetStats gets all stats
 func getStats(tx *pop.Connection) Stats {
 	return Stats{
 		Votes:      GetVoteCount(tx),
 		Pictures:   GetPictureCount(tx),
 		VoteCounts: getPicturesPerVotes(tx),
+		AllVotes:   getAllVotes(tx),
 	}
 }
 
