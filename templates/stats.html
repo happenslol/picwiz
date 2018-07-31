@@ -27,7 +27,7 @@
         data = [
             <%= for (vote) in stats.AllVotes { %>
                 {
-                    time: <%= vote.CreatedAt %>
+                    time: "<%= vote.CreatedAt %>"
                 },
             <% } %> 
             ]
