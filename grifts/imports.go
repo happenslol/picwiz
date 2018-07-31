@@ -338,7 +338,7 @@ func processImage(
 	hasher.Write(bytes)
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
-	picId := uuid.Must(uuid.NewV1())
+	picId := uuid.Must(uuid.NewV4())
 	picture := models.Picture{
 		ID:              picId,
 		Filename:        f.Name(),
@@ -346,6 +346,22 @@ func processImage(
 		ImportID:        importID,
 		ConfidenceLevel: 0.0,
 		Sorting:         0.0,
+	}
+	query := fmt.Sprintf(
+		"SELECT * FROM pictures WHERE hash = %s",
+		hash
+	)
+
+	pics := []models.Picture{}
+
+	models.DB.
+		RawQuery(query).
+		All(&pics)
+
+	if len(s) > 0 {
+		fmt.Printf("\tskippin dublicate file: %v\n", f.Name())
+		wg.Done()
+		return
 	}
 
 	b := decoded.Bounds()
