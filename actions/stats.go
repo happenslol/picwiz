@@ -20,26 +20,24 @@ type voteCount struct {
 	Count int32 `db:"count"`
 }
 
-// GetVoteCount gets total vote count
-func GetVoteCount(tx *pop.Connection) int32 {
+func getVoteCount(tx *pop.Connection) int32 {
 	count, err := tx.
 		Count(&models.Vote{})
 
 	if err != nil {
-		fmt.Printf("Orror du nap!! (picture count)%v\n", err)
+		fmt.Printf("error while getting vote count: %v\n", err)
 		return 0
 	}
 
 	return int32(count)
 }
 
-// GetPictureCount gets the total picture count
-func GetPictureCount(tx *pop.Connection) int32 {
+func getPictureCount(tx *pop.Connection) int32 {
 	count, err := tx.
 		Count(&models.Picture{})
 
 	if err != nil {
-		fmt.Printf("Orror du nap!! (picture count)%v\n", err)
+		fmt.Printf("error while getting picture count: %v\n", err)
 		return 0
 	}
 
@@ -51,11 +49,15 @@ func getPicturesPerVotes(tx *pop.Connection) []voteCount {
 	counts := []voteCount{}
 
 	err := tx.
-		RawQuery("SELECT sub.votes, count(*) FROM (SELECT (upvotes + downvotes) as votes FROM pictures) sub GROUP BY votes ORDER BY sub.votes").
+		RawQuery(
+			"SELECT sub.votes, count(*) FROM " +
+				"(SELECT (upvotes + downvotes) " +
+				"as votes FROM pictures) " +
+				"sub GROUP BY votes ORDER BY sub.votes").
 		All(&counts)
 
 	if err != nil {
-		fmt.Printf("Orror du nap!! (picture vote count)%v\n", err)
+		fmt.Printf("error while getting pictures per votes: %v\n", err)
 	}
 	return counts
 }
@@ -72,16 +74,17 @@ func getAllVotes(tx *pop.Connection, c buffalo.Context) []models.Vote {
 		All(&votes)
 
 	if err != nil {
-		fmt.Printf("Orror du nap!! (picture vote count)%v\n", err)
+		fmt.Printf("error while getting all votes: %v\n", err)
 	}
+
 	return votes
 }
 
 // GetStats gets all stats
 func getStats(tx *pop.Connection, c buffalo.Context) Stats {
 	return Stats{
-		Votes:      GetVoteCount(tx),
-		Pictures:   GetPictureCount(tx),
+		Votes:      getVoteCount(tx),
+		Pictures:   getPictureCount(tx),
 		VoteCounts: getPicturesPerVotes(tx),
 		AllVotes:   getAllVotes(tx, c),
 	}
