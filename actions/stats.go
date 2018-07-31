@@ -60,8 +60,13 @@ func getPicturesPerVotes(tx *pop.Connection) []voteCount {
 	return counts
 }
 
-func getAllVotes(tx *pop.Connection) []models.Vote {
+func getAllVotes(tx *pop.Connection, c buffalo.Context) []models.Vote {
+
 	votes := []models.Vote{}
+	if c.Param("detail") == "" {
+		return votes
+	}
+
 	err := tx.
 		RawQuery("SELECT * FROM votes").
 		All(&votes)
@@ -73,19 +78,19 @@ func getAllVotes(tx *pop.Connection) []models.Vote {
 }
 
 // GetStats gets all stats
-func getStats(tx *pop.Connection) Stats {
+func getStats(tx *pop.Connection, c buffalo.Context) Stats {
 	return Stats{
 		Votes:      GetVoteCount(tx),
 		Pictures:   GetPictureCount(tx),
 		VoteCounts: getPicturesPerVotes(tx),
-		AllVotes:   getAllVotes(tx),
+		AllVotes:   getAllVotes(tx, c),
 	}
 }
 
 // RenderStatsPage renders a page contains all stats
 func RenderStatsPage(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
-	c.Set("stats", getStats(tx))
+	c.Set("stats", getStats(tx, c))
 
 	return c.Render(200, r.HTML("stats.html"))
 }
