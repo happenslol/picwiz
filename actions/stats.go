@@ -50,7 +50,7 @@ func getPicturesPerVotes(tx *pop.Connection) []voteCount {
 	counts := []voteCount{}
 
 	err := tx.
-		RawQuery("SELECT sub.votes, count(*) FROM (SELECT (upvotes + downvotes) as votes FROM pictures) sub GROUP BY votes").
+		RawQuery("SELECT sub.votes, count(*) FROM (SELECT (upvotes + downvotes) as votes FROM pictures) sub GROUP BY votes ORDER BY sub.votes").
 		All(&counts)
 
 	if err != nil {
