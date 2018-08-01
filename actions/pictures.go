@@ -27,7 +27,7 @@ func PicturesHot(c buffalo.Context) error {
 	}
 
 	query := fmt.Sprintf(
-		"SELECT * FROM pictures WHERE consored = false ORDER BY sorting DESC LIMIT %d",
+		"SELECT * FROM pictures ORDER BY sorting DESC LIMIT %d", //todo(Hannes): censoring (but only when param all not set)
 		limit,
 	)
 
