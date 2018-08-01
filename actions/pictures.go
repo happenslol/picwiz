@@ -9,6 +9,7 @@ import (
 
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/pop"
+	"github.com/gobuffalo/uuid"
 	"github.com/happenslol/picwiz/models"
 )
 
@@ -93,4 +94,29 @@ func getNextVotingPicture(tx *pop.Connection) (*models.Picture, error) {
 	}
 
 	return &nextPic, nil
+}
+
+func SetCensorStatus(c buffalo.Context) error {
+	tx := c.Value("tx").(*pop.Connection)
+	pictureID, _ := uuid.FromString(c.Param("pictureId"))
+
+	censoringText := c.Param("censored")
+
+	isCensored := false
+	if censoringText == "true" {
+		isCensored = true
+	}
+
+	picture := models.Picture{}
+	if err := tx.Find(&picture, pictureID); err != nil {
+		return c.Render(404, nil)
+	}
+
+	picture.Censored = isCensored
+
+	if err := tx.Save(&picture); err != nil {
+		return c.Render(500, r.JSON(M{"error": err.Error()}))
+	}
+
+	return nil
 }
