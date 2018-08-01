@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/gobuffalo/buffalo"
@@ -14,17 +15,31 @@ import (
 // PicturesHot ...
 func PicturesHot(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
-	nextPic := models.Picture{}
-
-	err := tx.
-		RawQuery("SELECT * FROM pictures ORDER BY sorting DESC LIMIT 1").
-		First(&nextPic)
+	hotPics := models.Pictures{}
+	limit, err := strconv.Atoi(c.Param("limit"))
 
 	if err != nil {
 		return c.Render(500, r.JSON(M{"error": err.Error()}))
 	}
 
-	return c.Render(200, r.JSON(nextPic.ID))
+	if limit == 0 {
+		limit = 200
+	}
+
+	query := fmt.Sprintf(
+		"SELECT * FROM pictures WHERE consored = false ORDER BY sorting DESC LIMIT %d",
+		limit,
+	)
+
+	err = tx.
+		RawQuery(query).
+		All(&hotPics)
+
+	if err != nil {
+		return c.Render(500, r.JSON(M{"error": err.Error()}))
+	}
+
+	return c.Render(200, r.JSON(hotPics))
 }
 
 func biasedRandom(max int32) int32 {
