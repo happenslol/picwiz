@@ -26,9 +26,21 @@ func PicturesHot(c buffalo.Context) error {
 	if limit == 0 {
 		limit = 200
 	}
+	where := ""
+
+	all, err := strconv.ParseBool(c.Param("all"))
+
+	if err != nil {
+		return c.Render(500, r.JSON(M{"error": err.Error()}))
+	}
+
+	if !all {
+		where = "WHERE censored=false "
+	}
 
 	query := fmt.Sprintf(
-		"SELECT * FROM pictures ORDER BY sorting DESC LIMIT %d", //todo(Hannes): censoring (but only when param all not set)
+		"SELECT * FROM pictures %sORDER BY sorting DESC LIMIT %d", //todo(Hannes): censoring (but only when param all not set)
+		where,
 		limit,
 	)
 
@@ -98,13 +110,17 @@ func getNextVotingPicture(tx *pop.Connection) (*models.Picture, error) {
 
 func SetCensorStatus(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
-	pictureID, _ := uuid.FromString(c.Param("pictureId"))
+	pictureID, err := uuid.FromString(c.Param("pictureId"))
 
+	if err != nil {
+		return c.Render(500, r.JSON(M{"error": err.Error()}))
+	}
 	censoringText := c.Param("censored")
 
-	isCensored := false
-	if censoringText == "true" {
-		isCensored = true
+	isCensored, err := strconv.ParseBool(censoringText)
+
+	if err != nil {
+		return c.Render(500, r.JSON(M{"error": err.Error()}))
 	}
 
 	picture := models.Picture{}
@@ -114,9 +130,15 @@ func SetCensorStatus(c buffalo.Context) error {
 
 	picture.Censored = isCensored
 
-	if err := tx.Save(&picture); err != nil {
+	fmt.Printf("Censoring picture: %s: %b\n", pictureID, picture.Censored)
+
+	if err := tx.Update(&picture); err != nil {
 		return c.Render(500, r.JSON(M{"error": err.Error()}))
 	}
 
-	return nil
+	if err := tx.Find(&picture, pictureID); err != nil {
+		return c.Render(404, nil)
+	}
+
+	return c.Render(200, r.JSON(picture))
 }
