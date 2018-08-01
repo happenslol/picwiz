@@ -31,7 +31,7 @@ func PicturesHot(c buffalo.Context) error {
 	all, err := strconv.ParseBool(c.Param("all"))
 
 	if err != nil {
-		return c.Render(500, r.JSON(M{"error": err.Error()}))
+		all = false
 	}
 
 	if !all {
