@@ -46,6 +46,7 @@ func App() *buffalo.App {
 		app.GET("/imports/candidates", ImportsCandidates)
 		app.POST("/imports", ImportsCreate)
 		app.POST("/pictures/{pictureId}/votes", VotesCreate)
+		app.POST("/pictures/{pictureId}", SetCensorStatus)
 		app.GET("/pictures/hot", PicturesHot)
 		app.GET("/pictures/next", PicturesNext)
 		app.GET("/stats", RenderStatsPage)
